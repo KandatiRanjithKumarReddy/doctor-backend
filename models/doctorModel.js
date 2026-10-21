@@ -16,6 +16,8 @@ const doctorSchema = new mongoose.Schema({
   slots_booked: { type: Object, default: {} }
 }, { minimize: false })
 
+doctorSchema.index({ speciality: 1, available: 1 })
+
 const doctorModel = mongoose.models.doctor || mongoose.model('doctor', doctorSchema)
 
 export default doctorModel

@@ -131,38 +131,34 @@ const appointmentCancel = async (req, res) => {
 const doctorDashboard = async (req, res) => {
   try {
     const docId = req.docId;
-    const appointments = await appointmentModel.find({ docId })
+    const [appointments, latestAppointments] = await Promise.all([
+      appointmentModel.find({ docId }).select('amount isCompleted payment userId'),
+      appointmentModel.find({ docId }).sort({ date: -1 }).limit(5)
+    ]);
 
-    let earnings = 0
+    let earnings = 0;
+    const patientSet = new Set();
 
-    appointments.map((item) => {
+    appointments.forEach((item) => {
       if (item.isCompleted || item.payment) {
-        earnings += item.amount
+        earnings += (item.amount || 0);
       }
-    })
-
-    let patients = []
-
-    appointments.map((item) => {
-      if (!patients.includes(item.userId)) {
-        patients.push(item.userId)
-
+      if (item.userId) {
+        patientSet.add(item.userId.toString());
       }
-    })
+    });
+
     const dashData = {
       earnings,
       appointments: appointments.length,
-      patients: patients.length,
-      latestAppointments: appointments.reverse().slice(0, 5)
-    }
+      patients: patientSet.size,
+      latestAppointments
+    };
 
-    res.json({ success: true, dashData })
-  }
-
-
-  catch (error) {
-    console.log(error)
-    res.json({ success: false, message: error.message })
+    res.json({ success: true, dashData });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
   }
 }
 

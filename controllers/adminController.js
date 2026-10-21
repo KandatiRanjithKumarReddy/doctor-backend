@@ -144,25 +144,25 @@ const appointmentCancel = async (req, res) => {
 //api to display the data in the admin pannel
 const adminDashboard = async (req, res) => {
   try {
-
-    const doctors = await doctorModel.find({})
-    const users = await userModel.find({})
-    const appointments = await appointmentModel.find({})
+    const [doctorsCount, usersCount, appointmentsCount, latestAppointments] = await Promise.all([
+      doctorModel.countDocuments(),
+      userModel.countDocuments(),
+      appointmentModel.countDocuments(),
+      appointmentModel.find({}).sort({ date: -1 }).limit(5)
+    ])
 
     const dashData = {
-      doctors: doctors.length,
-      appointments: appointments.length,
-      patients: users.length,
-      lastestAppointments: appointments.reverse().slice(0, 5)
+      doctors: doctorsCount,
+      appointments: appointmentsCount,
+      patients: usersCount,
+      lastestAppointments: latestAppointments
     }
 
     res.json({ success: true, dashData })
-
   } catch (error) {
     console.log(error)
     res.json({ success: false, message: error.message })
   }
-
 }
 
 

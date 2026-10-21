@@ -6,6 +6,7 @@ import { v2 as cloudinary } from 'cloudinary'
 import doctorModel from '../models/doctorModel.js'
 import appointmentModel from '../models/appointmentModel.js'
 import razorpay from 'razorpay'
+import crypto from 'crypto'
 
 // API to register user
 const registerUser = async (req, res) => {
@@ -310,15 +311,36 @@ const paymentRazorpay = async (req, res) => {
 // API to verify payment of razorpay
 const verifyRazorpay = async (req, res) => {
   try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body
 
-    const { razorpay_order_id } = req.body
+    if (!razorpay_order_id) {
+      return res.json({ success: false, message: 'Missing order ID' })
+    }
+
+    // Verify HMAC-SHA256 signature if signature and payment_id are provided
+    if (razorpay_payment_id && razorpay_signature) {
+      const sign = razorpay_order_id + '|' + razorpay_payment_id
+      const expectedSign = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+        .update(sign.toString())
+        .digest('hex')
+
+      if (razorpay_signature === expectedSign) {
+        const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id)
+        await appointmentModel.findByIdAndUpdate(orderInfo.receipt, { payment: true })
+        return res.json({ success: true, message: 'Payment Verified & Successful' })
+      } else {
+        return res.json({ success: false, message: 'Invalid Payment Signature' })
+      }
+    }
+
+    // Fallback order status check
     const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id)
-
     if (orderInfo.status === 'paid') {
       await appointmentModel.findByIdAndUpdate(orderInfo.receipt, { payment: true })
       res.json({ success: true, message: "Payment Successful" })
     } else {
-     res.json({ success: false, message: "Payment Failed" })
+      res.json({ success: false, message: "Payment Failed" })
     }
   }
   catch (error) {
