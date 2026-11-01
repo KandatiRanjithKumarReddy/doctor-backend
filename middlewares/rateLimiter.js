@@ -59,4 +59,25 @@ export const doctorListLimiter = rateLimit({
   message: 'Too many requests for doctor directory. Please slow down.'
 });
 
+// 4. Patient Feedback Limiter (10 submissions per 10 minutes)
+export const feedbackLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  message: 'Too many feedback submissions. Please try again in a few minutes.'
+});
+
+// 5. Vaidya AI Assistant Limiter (15 requests per 5 minutes)
+export const aiLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 15,
+  message: 'Vaidya is receiving too many requests right now. Please wait a moment and try again.'
+});
+
+// 6. Payment Processing Limiter (15 payment requests per 5 minutes)
+export const paymentLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 15,
+  message: 'Too many payment requests. Please wait a moment.'
+});
+
 export default rateLimit;
